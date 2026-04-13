@@ -12,6 +12,7 @@
     "bug_fixes.ConnectivityHandlerMixin",
     "bug_fixes.EntityMixin",
     "bug_fixes.FluidTankBlockMixin",
+    "bug_fixes.GalosphereForgePatchMixin",
     "bug_fixes.InventoryIdentifier$PairMixin",
     "bug_fixes.ItemSlotsMixin",
     "bug_fixes.LecternControllerBlockEntityMixin",
