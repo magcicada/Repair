@@ -18,7 +18,7 @@ public class GalosphereForgePatchMixin {
     private void onGetValue(ResourceLocation location, CallbackInfoReturnable<Object> cir) {
         if (location != null && "galosphere".equals(location.getNamespace())) {
             String path = location.getPath();
-            if (path.contains("silver") && !path.equals("silverfish")) {
+            if (path.contains("silver") && !path.equals("silverfish") && !path.contains("loot")) {
                 ResourceLocation redirectedId = new ResourceLocation("galosphere", path.replace("silver", "palladium"));
 
                 cir.setReturnValue(((ForgeRegistry<?>) (Object) this).getValue(redirectedId));
