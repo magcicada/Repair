@@ -22,8 +22,9 @@ There are three ways developers can assist with this project:
 - Backport PRs or commits from Create (please try to list the original author as co-author of your commit).
 - For bugs still present on 1.21.1+ Create, submit PRs to Create itself (we'll see them) and then, optionally, to us.
 
-Fabric requires Java 21 to build. LLM contributions will be rejected.  
-If you prefer EMI in your development environment over JEI, add the `EMI_IN_DEV_ENV` environment variable with value `true`.
+Fabric requires Java 21 to build. As long as Porting-Lib doesn't have a release containing our merged PR, you'll also need to clone the submodule and run `./gradlew publishToMavenLocal` or comment out [this line](build.gradle#L81) and deal with lower interaction ranges in a couple of places.  
+If you prefer EMI in your development environment over JEI, add the `EMI_IN_DEV_ENV` environment variable with value `true`.  
+LLM contributions will be rejected.  
 
 ### F.A.Q.
 **Q: Can this be used in my modpack?**  
@@ -47,6 +48,7 @@ Most of this project is released under the [MIT license](LICENSE).
 
 #### Third-Party Content
 By its very nature, this project is going to be based on and contain parts of Create, whose code is licensed under the [MIT license](https://github.com/Creators-of-Create/Create/blob/mc1.21.1/dev/LICENSE.md).  
+Similarly, parts of this project are based on and contain parts of Ponder, whose code is licensed under the [MIT license](https://github.com/Creators-of-Create/Ponder/blob/mc1.21.1/dev/LICENSE).  
 [FluiderBuilderMixin](src/main/java/ch/voidlee/repair/mixin/crash_fixes/FluidBuilderMixin.java) is based on a commit to Registrate, which is licensed under the [MPL-2.0 license](https://github.com/tterrag1098/Registrate/blob/1.21.8/dev/LICENSE).  
 [OptionsMixin](src/main/java/ch/voidlee/repair/mixin/client/OptionsMixin.java) is based on Fabric API's GameOptionsMixin, which is licensed under the [Apache 2.0 license](https://github.com/FabricMC/fabric-api/blob/1.20.1/LICENSE).  
 
