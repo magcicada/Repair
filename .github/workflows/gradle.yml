@@ -10,6 +10,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout 1.20.1/forge branch
         uses: actions/checkout@v6
@@ -19,16 +20,19 @@ jobs:
         with:
           java-version: '17'
           distribution: 'zulu'
-          cache: 'gradle'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
 
       - name: Grant execute permission
         run: chmod +x gradlew
 
       - name: Build with Gradle
-        run: ./gradlew build
+        run: ./gradlew build --stacktrace --info
 
       - name: Upload Artifact
+        if: success()
         uses: actions/upload-artifact@v6
         with:
           name: Create-Repair-Build
-          path: build/libs
+          path: build/libs/
