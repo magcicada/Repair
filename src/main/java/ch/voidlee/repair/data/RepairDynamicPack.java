@@ -1,8 +1,6 @@
 package ch.voidlee.repair.data;
 
 import ch.voidlee.repair.Repair;
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Multimap;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.mojang.serialization.JsonOps;
@@ -20,6 +18,8 @@ import com.simibubi.create.foundation.data.recipe.Mods;
 import com.simibubi.create.foundation.pack.DynamicPack;
 import com.simibubi.create.foundation.pack.DynamicPackSource;
 import com.tterrag.registrate.util.entry.BlockEntry;
+import net.createmod.catnip.data.Couple;
+import net.createmod.catnip.data.Pair;
 import net.minecraft.advancements.critereon.ContextAwarePredicate;
 import net.minecraft.advancements.critereon.InventoryChangeTrigger;
 import net.minecraft.advancements.critereon.ItemPredicate;
@@ -48,6 +48,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.InputStream;
 import java.util.*;
+import java.util.function.Function;
 
 import static com.simibubi.create.foundation.block.CopperBlockSet.DEFAULT_VARIANTS;
 import static net.minecraft.world.level.block.WeatheringCopper.WeatherState.*;
@@ -55,7 +56,8 @@ import static net.minecraft.world.level.block.WeatheringCopper.WeatherState.*;
 public class RepairDynamicPack extends DynamicPack {
     private static final String PACK_ID = "create_repair:dynamic_data";
 
-    private final Multimap<ResourceLocation, TagEntry> ITEM_TAGS = HashMultimap.create();
+    // Use insertIntoTag and removeFromTag methods to modify. Couples are organized <additions, removals>
+    private final Map<ResourceLocation, Couple<Set<TagEntry>>> ITEM_TAGS = new HashMap<>();
 
     private static final JsonObject DISABLED_RECIPE;
 
@@ -101,8 +103,8 @@ public class RepairDynamicPack extends DynamicPack {
         fixGalosphereCompat();
         fixNeapolitanCompat();
 
-        for (Map.Entry<ResourceLocation, Collection<TagEntry>> tags : ITEM_TAGS.asMap().entrySet()) {
-            TagFile tagFile = new TagFile(new ArrayList<>(tags.getValue()), false);
+        for (Map.Entry<ResourceLocation, Couple<Set<TagEntry>>> tags : ITEM_TAGS.entrySet()) {
+            TagFile tagFile = new TagFile(new ArrayList<>(tags.getValue().getFirst()), false, new ArrayList<>(tags.getValue().getSecond()));
             this.put(tags.getKey().withPrefix("tags/items/"), TagFile.CODEC.encodeStart(JsonOps.INSTANCE, tagFile).result().orElseThrow());
         }
         ITEM_TAGS.clear();
@@ -478,6 +480,8 @@ public class RepairDynamicPack extends DynamicPack {
         if (!ModList.get().isLoaded(Mods.GS.getId())) {
             return;
         }
+        fixGalosphereDupe();
+
         ArtifactVersion hasPalladiumStartingFrom = new DefaultArtifactVersion("1.5.0");
         ArtifactVersion galosphereVersion = ModList.get().getModFileById(Mods.GS.getId()).getMods().get(0).getVersion();
         // < 1.5.0 versions had 1.20.1- leading the version
@@ -493,6 +497,21 @@ public class RepairDynamicPack extends DynamicPack {
         disableRecipe("silver_ingot_compat_galosphere", BLASTING);
     }
 
+    // https://github.com/Creators-of-Create/Create/pull/10548
+    private void fixGalosphereDupe() {
+        removeFromTag(AllTags.AllItemTags.ALLURITE.tag.location(), Mods.GS.asResource("allurite_slab"), ITEM_TAGS);
+        removeFromTag(AllTags.AllItemTags.ALLURITE.tag.location(), Mods.GS.asResource("smooth_allurite_slab"), ITEM_TAGS);
+        removeFromTag(AllTags.AllItemTags.ALLURITE.tag.location(), Mods.GS.asResource("allurite_brick_slab"), ITEM_TAGS);
+
+        removeFromTag(AllTags.AllItemTags.AMETHYST.tag.location(), Mods.GS.asResource("amethyst_slab"), ITEM_TAGS);
+        removeFromTag(AllTags.AllItemTags.AMETHYST.tag.location(), Mods.GS.asResource("smooth_amethyst_slab"), ITEM_TAGS);
+        removeFromTag(AllTags.AllItemTags.AMETHYST.tag.location(), Mods.GS.asResource("amethyst_brick_slab"), ITEM_TAGS);
+
+        removeFromTag(AllTags.AllItemTags.LUMIERE.tag.location(), Mods.GS.asResource("lumiere_slab"), ITEM_TAGS);
+        removeFromTag(AllTags.AllItemTags.LUMIERE.tag.location(), Mods.GS.asResource("smooth_lumiere_slab"), ITEM_TAGS);
+        removeFromTag(AllTags.AllItemTags.LUMIERE.tag.location(), Mods.GS.asResource("lumiere_brick_slab"), ITEM_TAGS);
+    }
+
     // https://github.com/Creators-of-Create/Create/pull/10719
     private void fixNeapolitanCompat() {
         new Builder<>("compat/neapolitan/milk_bottle", EmptyingRecipe::new)
@@ -503,8 +522,19 @@ public class RepairDynamicPack extends DynamicPack {
                 .build();
     }
 
-    private void insertIntoTag(ResourceLocation tag, ResourceLocation itemId, Multimap<ResourceLocation, TagEntry> tagMap) {
-        tagMap.put(tag, TagEntry.optionalElement(itemId));
+    private void insertIntoTag(ResourceLocation tag, ResourceLocation itemId, Map<ResourceLocation, Couple<Set<TagEntry>>> tagMap) {
+        tagMapOp(tag, itemId, tagMap, Pair::getFirst);
+    }
+
+    private void removeFromTag(ResourceLocation tag, ResourceLocation itemId, Map<ResourceLocation, Couple<Set<TagEntry>>> tagMap) {
+        tagMapOp(tag, itemId, tagMap, Pair::getSecond);
+    }
+
+    private void tagMapOp(ResourceLocation tag, ResourceLocation itemId, Map<ResourceLocation, Couple<Set<TagEntry>>> tagMap, Function<Couple<Set<TagEntry>>, Set<TagEntry>> op) {
+        if (!tagMap.containsKey(tag)) {
+            tagMap.put(tag, Couple.create(HashSet::new));
+        }
+        op.apply(tagMap.get(tag)).add(TagEntry.optionalElement(itemId));
     }
 
     private String getPath(ItemLike itemLike) {
